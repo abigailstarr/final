@@ -4,7 +4,6 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script src="https://tympanus.net/Development/Arctext/js/jquery.arctext.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,19 +128,54 @@
     }
 
     .advice-submit {
-      font-size: 10px;
+      font-size: 15px;
       padding: 10px 20px;
       background-color: Crimson;
       color: White;
-      border-radius: 15px;
-      font-family: "Viva Sans", sans-serif;
+      border-radius: 30px;
+      font-family: "Vina Sans", sans-serif;
+    }
+
+    .response-text {
+      color: white;
+      font-size: 28px;
+      font-family: "Vina Sans", sans-serif;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 2s ease;
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 5;
+      pointer-events: none;
+    }
+    
+    .background-questions {
+      position: fixed;
+      top: -40px;
+      left: -40px;
+      width: 110vw;
+      height: 110vh;
+      font-size: 50px;
+      line-height: 1.5;
+      color: rgba(0, 191, 255, 0.1);
+      white-space: pre-wrap;
+      font-family: "Vina Sans", sans-serif;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      border: 2px solid red;
     }
   </style>
 </head>
 
 <body>
+  <div class="background-questions"></div>
+  
   <div class="title">Push for Advice</div>
-  <div class="button"></div>
+  <div class="button">
+    <div class="response-text"></div>
+  </div>
 
   <div class="question-box">
     <input class="question-input" type="text" placeholder="What do you need advice on?" />
@@ -174,11 +208,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ✅ Your arctext & button logic
-    $(function() {
-      $(".title").arctext({ radius: 400, dir: 1 });
-    });
-
     const button = nn.get(".button");
     const title = nn.get(".title");
 
@@ -193,52 +222,52 @@
     button.on("mouseleave", () => {
       title.style.transform = "translate(-50%, 0)";
     });
-    
+
     function hybridChunking(text) {
       const doc = nlp(text);
       const chunks = new Set();
-      
+
       //get mini-clauses split by punctuation and conjuctions
       const miniClauses = text.split(/[,;.!?]|(?:\s+and\s+|\s+but\s+|\s+or\s+|\s+so\s+)/gi);
       miniClauses.forEach(clause => {
         const trimmed = clause.trim();
         if (trimmed.length >= 4) chunks.add(trimmed);
       });
-      
+
       //get noun phrases using compromise.js
       doc.nouns().out("array").forEach(phrase => {
         if (phrase.length >= 3) chunks.add(phrase.trim());
       });
-      
+
       //get action phrases using compromise.js
       doc.verbs().forEach(verb => {
         const action = verb.text("normal");
         if (action.length >= 3) chunks.add(action);
       });
-      
+
       return Array.from(chunks);
     }
-    
+
     async function isDuplicate(chunk) {
       const snapshot = await db.ref("advice").once("value");
       let duplicate = false;
-      
+
       snapshot.forEach(child => {
         if (child.val().text.trim().toLowerCase() === chunk.trim().toLowerCase()) duplicate = true;
       })
-      
+
       return duplicate
     }
-    
+
     const adviceInput = nn.get(".advice-input");
     const submitButton = nn.get(".advice-submit");
-    
+
     submitButton.on("click", async () => {
       const text = adviceInput.value.trim();
       if (!text) return;
-      
+
       const chunks = hybridChunking(text);
-      
+
       for (const chunk of chunks) {
         if (!(await isDuplicate(chunk))) {
           db.ref("advice").push({
@@ -248,6 +277,107 @@
         }
       }
       adviceInput.value = "";
+    });
+
+    const questionInput = nn.get(".question-input");
+
+    function fetchAllAdvice() {
+      return db.ref("advice").once("value").then(snapshot => {
+        const chunks = [];
+        snapshot.forEach(child => {
+          const val = child.val();
+          if (val.text) chunks.push(val.text);
+        });
+        return chunks;
+      });
+    }
+
+    function saveQuestion(q) {
+      db.ref("questions").push({
+        text: q,
+        timestamp: Date.now()
+      });
+    }
+
+    function generateResponse(chunks) {
+      const shuffled = nn.shuffle(chunks);
+      const length = Math.floor(Math.random() * 5) + 3;
+      return shuffled.slice(0, length).join(" ");
+    }
+
+    button.on("click", async () => {
+      const question = questionInput.value.trim();
+
+      if (question) {
+        saveQuestion(question);
+      }
+
+      const adviceChunks = await fetchAllAdvice();
+      if (adviceChunks.length === 0) {
+        return;
+      }
+
+      const response = generateResponse(adviceChunks);
+
+      if (window.responseTimeout) clearTimeout(window.responseTimeout);
+
+      const responseDiv = nn.get(".response-text");
+
+      responseDiv.content = response;
+
+      $(responseDiv.raw).arctext("destroy");
+      $(responseDiv.raw).arctext({
+        radius: 300
+      });
+
+      responseDiv.style.opacity = 0;
+      setTimeout(() => {
+        responseDiv.style.opacity = 1;
+      }, 50);
+
+      window.responseTimeout = setTimeout(() => {
+        responseDiv.style.opacity = 0;
+        setTimeout(() => {
+          responseDiv.textContent = "";
+        }, 1000);
+      }, 100000);
+    });
+    
+    function repeatToFillText(array, minLength = 2000) {
+      const repeated = [];
+      while (repeated.join(" ").length < minLength) {
+        repeated.push(...nn.shuffle(array));
+      }
+      return repeated;
+    }
+    
+    function loadBackgroundQuestions() {
+      db.ref("questions").once("value").then(snapshot => {
+        const questions = [];
+        snapshot.forEach(child => {
+          const val = child.val();
+          if (val.text) questions.push(val.text);
+        });
+        
+        if (questions.length < 5) {
+          questions.push(
+            "What’s next for me?",
+            "How do I know I’m ready?",
+            "Should I trust my gut?",
+            "What happens after goodbye?",
+            "Is fear always bad?"
+          );
+        }
+        
+        const repeated = repeatToFillText(questions, 5000);
+        const container = nn.get(".background-questions");
+        container.textContent = repeated.join(". ") + ".";
+      });
+    }
+    
+    nn.on("load", () => {
+      $(".title").arctext({ radius: 400, dir: 1 });
+      loadBackgroundQuestions();
     });
   </script>
 </body>
