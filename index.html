@@ -88,6 +88,7 @@
       -webkit-text-stroke: 2px DarkSlateGray;
       text-shadow: 1px 1px 2px DarkSlateGray;
       z-index: 4;
+      transition: transform 0.4s ease;
     }
 
     .question-box {
@@ -147,7 +148,7 @@
 
   <div class="advice-box">
     <input class="advice-input" type="text" placeholder="Share your best or worst advice..." />
-    <button class="advice-submit">Submit</button>
+    <button class="advice-submit">SUBMIT</button>
   </div>
   <script>
     $(function() {
@@ -155,6 +156,21 @@
         radius: 400,
         dir: 1
       });
+    });
+    
+    const button = nn.get(".button");
+    const title = nn.get(".title");
+    
+    button.on("mousedown", () => {
+      title.style.transform = "translate(-50%, 20px)";
+    });
+    
+    button.on("mouseup", () => {
+      title.style.transform = "translate(-50%, 0)";
+    });
+    
+    button.on("mouseleave", () => {
+      title.style.transform = "translate(-50%, 0)";
     });
   </script>
 </body>
