@@ -156,21 +156,20 @@
       left: -40px;
       width: 110vw;
       height: 110vh;
-      font-size: 50px;
-      line-height: 1.5;
-      color: rgba(0, 191, 255, 0.1);
-      white-space: pre-wrap;
+      font-size: 75px;
+      line-height: 1.1;
+      color: rgba(0, 0, 0, 0.1);
+      white-space: collapse;
       font-family: "Vina Sans", sans-serif;
       z-index: 0;
       pointer-events: none;
       overflow: hidden;
-      border: 2px solid red;
     }
   </style>
 </head>
 
 <body>
-  <div class="background-questions"></div>
+  <div class="background-questions">""</div>
   
   <div class="title">Push for Advice</div>
   <div class="button">
@@ -371,7 +370,7 @@
         
         const repeated = repeatToFillText(questions, 5000);
         const container = nn.get(".background-questions");
-        container.textContent = repeated.join(". ") + ".";
+        container.textContent = repeated.join(" ") + ".";
       });
     }
     
