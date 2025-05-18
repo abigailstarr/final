@@ -177,6 +177,7 @@
   <script>
     /* global nn */
     /* global firebase */
+    /* global nlp */
 
     const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
@@ -260,8 +261,6 @@
       }
       adviceInput.value = "";
     });
-
-    const questionInput = nn.get(".question-input");
 
     function fetchAllAdvice() {
       return db.ref("advice").once("value").then(snapshot => {
