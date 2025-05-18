@@ -294,9 +294,9 @@
         //chaotic & random advice
         () => nn.shuffle(chunks).slice(0, 5).join(" ") + ".",
         () => nn.shuffle(chunks).slice(0, 7).map(word => word.toUpperCase()).join(" ") + "!",
-        () => `${nn.shuffle(nouns)}-${nn.shuffle(verbs)}-${nn.shuffle(nouns)}?`,
-        () => `${nn.shuffle(verbs)}... ${nn.shuffle(verbs)}... ${nn.shuffle(nouns)}!`,
-        () => [nn.shuffle(verbs), nn.shuffle(nouns), nn.shuffle(verbs), nn.shuffle(nouns)].join(" ")
+        () => `${nn.random(nouns)}-${nn.random(verbs)}-${nn.random(nouns)}?`,
+        () => `${nn.random(verbs)}... ${nn.random(verbs)}... ${nn.random(nouns)}!`,
+        () => [nn.random(verbs), nn.random(nouns), nn.random(verbs), nn.random(nouns)].join(" ")
       ];
 
       return nn.random(templates)();
