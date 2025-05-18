@@ -222,7 +222,7 @@
       allPhrases.forEach(phrase => {
         const trimmed = phrase.trim();
 
-        if (trimmed.split("").length > 3) return;
+        if (trimmed.split("").length < 3) return;
 
         if (trimmed.length < 2) return;
 
