@@ -137,7 +137,7 @@
       z-index: 5;
       pointer-events: none;
     }
-    
+
     .background-questions {
       position: fixed;
       top: -40px;
@@ -158,14 +158,14 @@
 
 <body>
   <div class="background-questions">""</div>
-  
+
   <div class="title">Push for Advice</div>
   <div class="button">
     <div class="response-text">HELLO</div>
   </div>
 
   <div class="advice-box">
-    <input class="advice-input" type="text" placeholder="Share your best or worst advice..."/>
+    <input class="advice-input" type="text" placeholder="Share your best or worst advice..." />
     <button class="advice-submit">SUBMIT</button>
   </div>
 
@@ -177,7 +177,7 @@
   <script>
     /* global nn */
     /* global firebase */
-    
+
     const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
     const firebaseConfig = {
@@ -212,19 +212,19 @@
     function hybridChunking(text) {
       const doc = nlp(text);
       const chunks = new Set();
-      
+
       const nouns = doc.nouns().out("array");
       const verbs = doc.verbs().out("array");
-      
+
       const allPhrases = [...nouns, ...verbs]
-      
+
       allPhrases.forEach(phrase => {
         const trimmed = phrase.trim();
-        
+
         if (trimmed.split("").length > 3) return;
-        
+
         if (trimmed.length < 2) return;
-        
+
         chunks.add(trimmed.toLowerCase());
       });
       return Array.from(chunks);
@@ -274,19 +274,12 @@
       });
     }
 
-    function saveQuestion(q) {
-      db.ref("questions").push({
-        text: q,
-        timestamp: Date.now()
-      });
-    }
-
     function generateResponse(chunks) {
       const shuffled = nn.shuffle(chunks);
-      
+
       const nouns = shuffled.filter(w => nlp(w).nouns().length > 0);
       const verbs = shuffled.filter(w => nlp(w).verbs().length > 0);
-      
+
       const templates = [
         //structured advice
         () => `Always ${nn.random(verbs)} your ${nn.random(nouns)}.`,
@@ -298,7 +291,7 @@
         () => `Let the ${nn.random(nouns)} ${nn.random(verbs)}.`,
         () => `You are now the ${nn.random(nouns)}.`,
         () => `${capitalize(nn.random(verbs))}, ${nn.random(verbs)}, ${nn.random(verbs)}.`,
-        
+
         //chaotic & random advice
         () => nn.shuffle(chunks).slice(0, 5).join(" ") + ".",
         () => nn.shuffle(chunks).slice(0, 7).map(word => word.toUpperCase()).join(" ") + "!",
@@ -306,17 +299,11 @@
         () => `${nn.shuffle(verbs)}... ${nn.shuffle(verbs)}... ${nn.shuffle(nouns)}!`,
         () => [nn.shuffle(verbs), nn.shuffle(nouns), nn.shuffle(verbs), nn.shuffle(nouns)].join(" ")
       ];
-      
+
       return nn.random(templates)();
     }
 
     button.on("click", async () => {
-      const question = questionInput.value.trim();
-
-      if (question) {
-        saveQuestion(question);
-      }
-
       const adviceChunks = await fetchAllAdvice();
       if (adviceChunks.length === 0) {
         return;
@@ -329,7 +316,7 @@
       const responseDiv = nn.get(".response-text");
 
       responseDiv.textContent = response;
-      
+
       $(responseDiv.raw).arctext({
         radius: 300
       });
@@ -346,7 +333,7 @@
         }, 1000);
       }, 10000);
     });
-    
+
     function repeatToFillText(array, minLength = 2000) {
       const repeated = [];
       while (repeated.join(" ").length < minLength) {
@@ -354,33 +341,31 @@
       }
       return repeated;
     }
-    
+
     function loadBackgroundQuestions() {
-      db.ref("questions").once("value").then(snapshot => {
-        const questions = [];
-        snapshot.forEach(child => {
-          const val = child.val();
-          if (val.text) questions.push(val.text);
-        });
-        
-        if (questions.length < 5) {
-          questions.push(
-            "What’s next for me?",
-            "How do I know I’m ready?",
-            "Should I trust my gut?",
-            "What happens after goodbye?",
-            "Is fear always bad?"
-          );
-        }
-        
-        const repeated = repeatToFillText(questions, 5000);
-        const container = nn.get(".background-questions");
-        container.textContent = repeated.join(" ") + ".";
-      });
+      const questions = [
+        "What’s next for me?",
+        "How do I know I’m ready?",
+        "Should I trust my gut?",
+        "What happens after goodbye?",
+        "Is fear always bad?",
+        "Who do I want to become?",
+        "Why not now?",
+        "Can I start over?",
+        "Is this the end or the beginning?",
+        "What if it all works out?"
+      ]
+
+      const repeated = repeatToFillText(questions, 5000);
+      const container = nn.get(".background-questions");
+      container.textContent = repeated.join(" ") + ".";
     }
-    
+
     nn.on("load", () => {
-      $(".title").arctext({ radius: 400, dir: 1 });
+      $(".title").arctext({
+        radius: 400,
+        dir: 1
+      });
       loadBackgroundQuestions();
     });
   </script>
