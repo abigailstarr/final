@@ -124,7 +124,7 @@
 
     .response-text {
       color: white;
-      font-size: 28px;
+      font-size: 40px;
       width: 70%;
       font-family: "Vina Sans", sans-serif;
       opacity: 0;
@@ -152,6 +152,21 @@
       z-index: 0;
       pointer-events: none;
       overflow: hidden;
+    }
+    
+    @media (max-width: 600px) {
+      .button,
+      .button::before,
+      .button::after {
+        width: 90vw;
+        height: 54vw;
+        border-radius: 50% !important;
+      }
+      
+      .title {
+        top: 20%;
+        font-size: 48px;
+      }
     }
   </style>
 </head>
