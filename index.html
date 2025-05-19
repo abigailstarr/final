@@ -1,5 +1,5 @@
 <head>
-  <title>Wise Words</title>
+  <title>Advice Button</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/gif" href="https://pixelsafari.neocities.org/favicon/horror/medical/organ8.gif">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -29,18 +29,35 @@
       position: relative;
       background-color: DeepSkyBlue;
     }
-
-    .button {
-      background-color: DarkRed;
+    
+    .button-container {
       position: absolute;
-      border-radius: 50%;
       width: 500px;
       height: 300px;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
+      border-radius: 50%;
+      z-index: 1;  
+    }
+    
+    .button-shadow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      top: 0;
+      left: 0;
       box-shadow: 0px 25px 0 20px AliceBlue, 0px 40px 0 30px DarkSlateGray;
-      z-index: 1;
+      z-index: -1;
+    }
+
+    .button {
+      background-color: DarkRed;
+      position: relative;
+      border-radius: 50%;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
     }
 
@@ -53,8 +70,8 @@
       bottom: 10%;
       left: 0%;
       transition: bottom 0.4s;
-      width: 500px;
-      height: 300px;
+      width: 100%;
+      height: 100%;
     }
 
     .button::after {
@@ -64,8 +81,8 @@
       border-radius: 50%;
       bottom: 10%;
       left: 0%;
-      width: 500px;
-      height: 300px;
+      width: 100%;
+      height: 100%;
       transition: height 0.4s;
     }
 
@@ -155,22 +172,23 @@
       pointer-events: none;
       overflow: hidden;
     }
-    
+
     @media (max-width: 600px) {
-      .button,
-      .button::before,
-      .button::after {
+      .button-container {
         width: 90vw;
         height: 54vw;
-        border-radius: 50% !important;
       }
       
+      .button-shadow {
+        box-shadow: 0px 15px 0 10px AliceBlue, 0px 25px 0 15px DarkSlateGray;
+      }
+
       .title {
         top: 20%;
         font-size: 64px;
         -webkit-text-stroke: 1px DarkSlateGray;
       }
-      
+
       .background-questions {
         font-size: 32px;
       }
@@ -182,10 +200,14 @@
   <div class="background-questions">""</div>
 
   <div class="title">Push for Advice</div>
-  <div class="button">
-    <div class="response-text">HELLO</div>
+  
+  <div class="button-container">
+    <div class="button-shadow"></div>
+    <div class="button">
+      <div class="response-text"></div>
+    </div>
   </div>
-
+  
   <div class="advice-box">
     <input class="advice-input" type="text" placeholder="Share your best or worst advice..." />
     <button class="advice-submit">SUBMIT</button>
@@ -231,7 +253,7 @@
     button.on("mouseleave", () => {
       title.style.transform = "translate(-50%, 0)";
     });
-    
+
     button.on("touchstart", () => {
       title.style.transform = "translate(-50%, 20px)";
     });
