@@ -258,8 +258,7 @@
       title.style.transform = "translate(-50%, 20px)";
     });
 
-    button.on("touchend", (e) => {
-      e.preventDefault();
+    button.on("touchend", () => {
       title.style.transform = "translate(-50%, 0)";
     });
 
