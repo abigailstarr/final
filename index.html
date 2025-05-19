@@ -224,6 +224,15 @@
     button.on("mouseleave", () => {
       title.style.transform = "translate(-50%, 0)";
     });
+    
+    button.on("touchstart", () => {
+      title.style.transform = "translate(-50%, 20px)";
+    });
+
+    button.on("touchend", (e) => {
+      e.preventDefault();
+      title.style.transform = "translate(-50%, 0)";
+    });
 
     function hybridChunking(text) {
       const doc = nlp(text);
