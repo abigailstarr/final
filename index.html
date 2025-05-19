@@ -29,7 +29,7 @@
       position: relative;
       background-color: DeepSkyBlue;
     }
-    
+
     .button-container {
       position: absolute;
       width: 500px;
@@ -38,9 +38,9 @@
       top: 50%;
       transform: translate(-50%, -50%);
       border-radius: 50%;
-      z-index: 1;  
+      z-index: 1;
     }
-    
+
     .button-shadow {
       position: absolute;
       width: 100%;
@@ -178,7 +178,7 @@
         width: 90vw;
         height: 54vw;
       }
-      
+
       .button-shadow {
         box-shadow: 0px 15px 0 10px AliceBlue, 0px 25px 0 15px DarkSlateGray;
       }
@@ -200,14 +200,14 @@
   <div class="background-questions">""</div>
 
   <div class="title">Push for Advice</div>
-  
+
   <div class="button-container">
     <div class="button-shadow"></div>
     <div class="button">
       <div class="response-text"></div>
     </div>
   </div>
-  
+
   <div class="advice-box">
     <input class="advice-input" type="text" placeholder="Share your best or worst advice..." />
     <button class="advice-submit">SUBMIT</button>
@@ -264,34 +264,83 @@
 
     function hybridChunking(text) {
       const doc = nlp(text);
-      const chunks = new Set();
+      const nounChunks = new Set();
+      const verbChunks = new Set();
+      const phraseChunks = new Set();
 
-      const nouns = doc.nouns().out("array");
-      const verbs = doc.verbs().out("array");
+      doc.match(`#Adjective? #Noun+`).forEach(m => nounChunks.add(m.text()));
+      doc.match(`#Verb+`).forEach(m => verbChunks.add(m.text()));
 
-      const allPhrases = [...nouns, ...verbs]
+      if (doc.nouns().length && doc.verbs().length) {
+        phraseChunks.add(text);
+      }
 
-      allPhrases.forEach(phrase => {
-        const trimmed = phrase.trim();
-
-        if (trimmed.split("").length < 3) return;
-
-        if (trimmed.length < 2) return;
-
-        chunks.add(trimmed.toLowerCase());
-      });
-      return Array.from(chunks);
+      return {
+        nouns: Array.from(nounChunks)
+          .map(t => t.trim().toLowerCase()),
+        verbs: Array.from(verbChunks)
+          .map(t => t.trim().toLowerCase()),
+        phrases: Array.from(phraseChunks)
+          .map(t => t.trim())
+      };
     }
 
-    async function isDuplicate(chunk) {
-      const snapshot = await db.ref("advice").once("value");
+    async function isDuplicate(type, chunk) {
+      const snapshot = await db.ref(`advice/${type}`).once("value");
       let duplicate = false;
 
       snapshot.forEach(child => {
         if (child.val().text.trim().toLowerCase() === chunk.trim().toLowerCase()) duplicate = true;
-      })
+      });
+      return duplicate;
+    }
 
-      return duplicate
+    async function saveChunkByType(chunks) {
+      for (const type in chunks) {
+        for (const chunk of chunks[type]) {
+          if (!(await isDuplicate(type, chunk))) {
+            db.ref(`advice/${type}`).push({
+              text: chunk,
+              timestamp: Date.now()
+            });
+          }
+        }
+      }
+    }
+
+    async function adviceByType() {
+      const types = ["nouns", "verbs", "phrases"];
+      const result = {};
+      for (const type of types) {
+        const snapshot = await db.ref(`advice/${type}`).once("value");
+        result[type] = [];
+        snapshot.forEach(child => {
+          if (child.val().text) result[type].push(child.val().text);
+        });
+      }
+      return result;
+    }
+
+    function generateResponse({
+      nouns,
+      verbs,
+      phrases
+    }) {
+      const templates = [
+        //structured advice
+        () => `Always ${nn.random(verbs)} your ${nn.random(nouns)}.`,
+        () => `Never ${nn.random(verbs)} a ${nn.random(nouns)}.`,
+        () => `Let the ${nn.random(nouns)} ${nn.random(verbs)}.`,
+        () => `Remember: ${capitalize(nn.random(phrases))}`,
+        () => `${capitalize(nn.random(verbs))} is not your friend.`,
+        () => `${capitalize(nn.random(nouns))} is your enemy.`,
+        () => `${capitalize(nn.random(phrases))}. Trust it.`,
+        () => `They said, ${capitalize(nn.random(phrases))}, and they were right.`,
+        () => `You are now the ${nn.random(nouns)}.`,
+        () => `${capitalize(nn.random(verbs))}, ${nn.random(verbs)}, ${nn.random(verbs)}.`,
+        () => nn.shuffle([...nouns, ...verbs, ...phrases]).slice(0, 5).join(" ") + "."
+      ];
+      return nn.random(templates)();
     }
 
     const adviceInput = nn.get(".advice-input");
@@ -300,65 +349,18 @@
     submitButton.on("click", async () => {
       const text = adviceInput.value.trim();
       if (!text) return;
-
       const chunks = hybridChunking(text);
-
-      for (const chunk of chunks) {
-        if (!(await isDuplicate(chunk))) {
-          db.ref("advice").push({
-            text: chunk.trim(),
-            timestamp: Date.now()
-          });
-        }
-      }
+      await saveChunkByType(chunks);
       adviceInput.value = "";
     });
 
-    function fetchAllAdvice() {
-      return db.ref("advice").once("value").then(snapshot => {
-        const chunks = [];
-        snapshot.forEach(child => {
-          const val = child.val();
-          if (val.text) chunks.push(val.text);
-        });
-        return chunks;
-      });
-    }
-
-    function generateResponse(chunks) {
-      const shuffled = nn.shuffle(chunks);
-
-      const nouns = shuffled.filter(w => nlp(w).nouns().length > 0);
-      const verbs = shuffled.filter(w => nlp(w).verbs().length > 0);
-
-      const templates = [
-        //structured advice
-        () => `Always ${nn.random(verbs)} your ${nn.random(nouns)}.`,
-        () => `Never ${nn.random(verbs)} a ${nn.random(nouns)}.`,
-        () => `If you can ${nn.random(verbs)}, you can ${nn.random(verbs)}.`,
-        () => `Always ${nn.random(verbs)} your ${nn.random(nouns)}.`,
-        () => `${capitalize(nn.random(nouns))} is not your friend.`,
-        () => `${capitalize(nn.random(nouns))} is your enemy.`,
-        () => `Let the ${nn.random(nouns)} ${nn.random(verbs)}.`,
-        () => `You are now the ${nn.random(nouns)}.`,
-        () => `${capitalize(nn.random(verbs))}, ${nn.random(verbs)}, ${nn.random(verbs)}.`,
-
-        //chaotic & random advice
-        () => nn.shuffle(chunks).slice(0, 5).join(" ") + ".",
-        () => nn.shuffle(chunks).slice(0, 7).map(word => word.toUpperCase()).join(" ") + "!",
-        () => `${nn.random(nouns)}-${nn.random(verbs)}-${nn.random(nouns)}?`,
-        () => `${nn.random(verbs)}... ${nn.random(verbs)}... ${nn.random(nouns)}!`,
-        () => [nn.random(verbs), nn.random(nouns), nn.random(verbs), nn.random(nouns)].join(" ")
-      ];
-
-      return nn.random(templates)();
-    }
-
     button.on("click", async () => {
-      const adviceChunks = await fetchAllAdvice();
-      if (adviceChunks.length === 0) {
-        return;
-      }
+      const adviceChunks = await adviceByType();
+      if (
+        !adviceChunks.nouns.length &&
+        !adviceChunks.verbs.length &&
+        !adviceChunks.phrases.length
+      ) return;
 
       const response = generateResponse(adviceChunks);
 
@@ -411,6 +413,10 @@
       const container = nn.get(".background-questions");
       container.textContent = repeated.join(" ") + ".";
     }
+
+    firebase.database().ref("advice").once("value").then(snapshot => {
+      snapshot.forEach(child => console.log(child.val().text));
+    });
 
     nn.on("load", () => {
       $(".title").arctext({
