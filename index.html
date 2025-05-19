@@ -326,19 +326,25 @@
       verbs,
       phrases
     }) {
+      const safe = arr => arr.length ? arr : ["something"];
+
+      const safeNouns = safe(nouns);
+      const safeVerbs = safe(verbs);
+      const safePhrases = safe(phrases);
+    
       const templates = [
         //structured advice
-        () => `Always ${nn.random(verbs)} your ${nn.random(nouns)}.`,
-        () => `Never ${nn.random(verbs)} a ${nn.random(nouns)}.`,
-        () => `Let the ${nn.random(nouns)} ${nn.random(verbs)}.`,
-        () => `Remember: ${capitalize(nn.random(phrases))}`,
-        () => `${capitalize(nn.random(verbs))} is not your friend.`,
-        () => `${capitalize(nn.random(nouns))} is your enemy.`,
-        () => `${capitalize(nn.random(phrases))}. Trust it.`,
-        () => `They said, ${capitalize(nn.random(phrases))}, and they were right.`,
-        () => `You are now the ${nn.random(nouns)}.`,
-        () => `${capitalize(nn.random(verbs))}, ${nn.random(verbs)}, ${nn.random(verbs)}.`,
-        () => nn.shuffle([...nouns, ...verbs, ...phrases]).slice(0, 5).join(" ") + "."
+        () => `Always ${nn.random(safeVerbs)} your ${nn.random(safeNouns)}.`,
+        () => `Never ${nn.random(safeVerbs)} a ${nn.random(safeNouns)}.`,
+        () => `Let the ${nn.random(safeNouns)} ${nn.random(safeVerbs)}.`,
+        () => `Remember: ${capitalize(nn.random(safePhrases))}`,
+        () => `${capitalize(nn.random(safeVerbs))} is not your friend.`,
+        () => `${capitalize(nn.random(safeNouns))} is your enemy.`,
+        () => `${capitalize(nn.random(safePhrases))}. Trust it.`,
+        () => `They said, ${capitalize(nn.random(safePhrases))}, and they were right.`,
+        () => `You are now the ${nn.random(safeNouns)}.`,
+        () => `${capitalize(nn.random(safeVerbs))}, ${nn.random(safeVerbs)}, ${nn.random(safeVerbs)}.`,
+        () => nn.shuffle([...safeNouns, ...safeVerbs, ...safePhrases]).slice(0, 5).join(" ") + "."
       ];
       return nn.random(templates)();
     }
@@ -355,7 +361,9 @@
     });
 
     button.on("click", async () => {
+      console.log("MAde it here.")
       const adviceChunks = await adviceByType();
+      console.log(adviceChunks)
       if (
         !adviceChunks.nouns.length &&
         !adviceChunks.verbs.length &&
@@ -363,6 +371,7 @@
       ) return;
 
       const response = generateResponse(adviceChunks);
+      console.log("Generated response:", response);
 
       if (window.responseTimeout) clearTimeout(window.responseTimeout);
 
@@ -413,10 +422,6 @@
       const container = nn.get(".background-questions");
       container.textContent = repeated.join(" ") + ".";
     }
-
-    firebase.database().ref("advice").once("value").then(snapshot => {
-      snapshot.forEach(child => console.log(child.val().text));
-    });
 
     nn.on("load", () => {
       $(".title").arctext({
