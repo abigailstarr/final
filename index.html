@@ -321,7 +321,7 @@
       return result;
     }
 
-    function generateResponse({
+    async function generateResponse({
       nouns,
       verbs,
       phrases
@@ -332,7 +332,7 @@
       const safeVerbs = safe(verbs);
       const safePhrases = safe(phrases);
     
-      const templates = [
+      const fallbackTemplates = [
         //structured advice
         () => `Always ${nn.random(safeVerbs)} your ${nn.random(safeNouns)}.`,
         () => `Never ${nn.random(safeVerbs)} a ${nn.random(safeNouns)}.`,
@@ -342,11 +342,28 @@
         () => `${capitalize(nn.random(safeNouns))} is your enemy.`,
         () => `${capitalize(nn.random(safePhrases))}. Trust it.`,
         () => `They said, ${capitalize(nn.random(safePhrases))}, and they were right.`,
-        () => `You are now the ${nn.random(safeNouns)}.`,
         () => `${capitalize(nn.random(safeVerbs))}, ${nn.random(safeVerbs)}, ${nn.random(safeVerbs)}.`,
         () => nn.shuffle([...safeNouns, ...safeVerbs, ...safePhrases]).slice(0, 5).join(" ") + "."
       ];
-      return nn.random(templates)();
+      
+      try {
+        const res = await fetch("https://getadvice-esrsq2neja-uc.a.run.app", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({nouns: safeNouns, verbs: safeVerbs})
+        });
+        
+        const data = await res.json();
+        if (data.response) {
+          return data.response;
+        } else {
+          console.warn("LLM response empty. Falling back.");
+          return nn.random(fallbackTemplates)();
+        }
+      } catch (error) {
+        console.error("LLM fetch failed, using fallback:", error);
+        return nn.random(fallbackTemplates)();
+      }
     }
 
     const adviceInput = nn.get(".advice-input");
@@ -361,17 +378,15 @@
     });
 
     button.on("click", async () => {
-      console.log("MAde it here.")
       const adviceChunks = await adviceByType();
-      console.log(adviceChunks)
+
       if (
         !adviceChunks.nouns.length &&
         !adviceChunks.verbs.length &&
         !adviceChunks.phrases.length
       ) return;
 
-      const response = generateResponse(adviceChunks);
-      console.log("Generated response:", response);
+      const response = await generateResponse(adviceChunks);
 
       if (window.responseTimeout) clearTimeout(window.responseTimeout);
 
