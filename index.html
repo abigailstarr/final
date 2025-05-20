@@ -349,6 +349,7 @@
       try {
         const res = await fetch("https://getadvice-esrsq2neja-uc.a.run.app", {
           method: "POST",
+          mode: "cors",
           headers: {"Content-Type": "application/json",
                    "Origin": "http://www.advicebutton.art"},
           body: JSON.stringify({nouns: safeNouns, verbs: safeVerbs})
